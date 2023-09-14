@@ -30,7 +30,7 @@ jobs:
         with:
           go-version: '${{ steps.get_version.outputs.GO_VERSION }}'
           check-latest: true
-      - name: get project dependencies
+      - name: Get project dependencies
         run: go mod download
       - name: Release
         run: | 

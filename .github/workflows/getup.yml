@@ -1,12 +1,11 @@
-name: updates
+name: getup
 on:
   schedule:
     - cron:  '0 14 * * *'
   workflow_dispatch:
   
 jobs:
-  updates:
-    name: updates
+  getup:
     runs-on: ubuntu-latest
     steps:
       - name: Check
