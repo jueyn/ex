@@ -9,16 +9,14 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps: 
-      - name: Get-id
-        id: get_id
+      - name: Get-lastet
         run: |
-          RELEASE_LATEST="$(curl -IkLs -o /tmp/NUL -w %{url_effective} ${{ secrets.SOURCE_VERSION }} | grep -o "[^/]*$")"
-          echo "ID=v${RELEASE_LATEST#v}" >> $GITHUB_OUTPUT
+          echo "LATEST=$(git ls-remote --tag --sort=-v:refname https://github.com/${{ secrets.REPOSITORY }} | head -1 | cut -f 2 | grep -o "[^/]*$")" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v4
         with:
-         repository: ${{ secrets.SOURCE_REPOSITORY }}
-         ref: ${{ steps.get_id.outputs.ID }}
+         repository: ${{ secrets.REPOSITORY }}
+         ref: ${{ env.LATEST }}
       - name: Get-version
         id: get_version
         run: |
@@ -56,3 +54,32 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
+          
+  clear:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check
+        id: clear
+        run: |
+          echo "ACHIVE=$(git ls-remote --tag --sort=-v:refname https://github.com/${{ github.repository }} | head -2 | cut -f 2 | sed -n 2p)" >> $GITHUB_OUTPUT 
+          echo "TAG=${ACHIVE##*/}" >> $GITHUB_OUTPUT
+      - name: Clear
+        run: |
+          git clone --quiet https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} tmp
+          cd tmp 
+          git tag -d ${{ steps.clear.outputs.TAG }}
+          git remote add tmp https://${{ github.actor }}:${{ secrets.TOKEN }}@github.com/${{ github.repository }}
+          git config user.name jueyn
+          git config user.email 129744577+jueyn@users.noreply.github.com
+          git push tmp :${{ steps.clear.outputs.ACHIVE }}
+          
+  delete-draft:
+    needs: clear
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete drafts
+        uses: hugo19941994/delete-draft-releases@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          
